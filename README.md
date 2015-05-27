@@ -1,4 +1,4 @@
-# taskcluster-client.go
+# httpbackoff
 [![Build Status](https://secure.travis-ci.org/taskcluster/httpbackoff.png)](http://travis-ci.org/taskcluster/httpbackoff)
 [![GoDoc](https://godoc.org/github.com/taskcluster/httpbackoff?status.png)](https://godoc.org/github.com/taskcluster/httpbackoff)
 
