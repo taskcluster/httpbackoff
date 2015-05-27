@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="UTF-8">
+    <title>httpbackoff by taskcluster</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
+  </head>
+  <body>
+    <section class="page-header">
+      <h1 class="project-name">httpbackoff</h1>
+      <h2 class="project-tagline">HTTP retry library with exponential backoff support and intelligent handling of http status codes and networking exceptions</h2>
+      <a href="https://github.com/taskcluster/httpbackoff" class="btn">View on GitHub</a>
+      <a href="https://github.com/taskcluster/httpbackoff/zipball/master" class="btn">Download .zip</a>
+      <a href="https://github.com/taskcluster/httpbackoff/tarball/master" class="btn">Download .tar.gz</a>
+    </section>
+
+    <section class="main-content">
+      <h1>
+<a id="taskcluster-clientgo" class="anchor" href="#taskcluster-clientgo" aria-hidden="true"><span class="octicon octicon-link"></span></a>taskcluster-client.go</h1>
+
+<p><a href="http://travis-ci.org/taskcluster/httpbackoff"><img src="https://secure.travis-ci.org/taskcluster/httpbackoff.png" alt="Build Status"></a>
+<a href="https://godoc.org/github.com/taskcluster/httpbackoff"><img src="https://godoc.org/github.com/taskcluster/httpbackoff?status.png" alt="GoDoc"></a></p>
+
+<p>Automatic http retries for intermittent failures, with exponential backoff,
+based on <a href="https://github.com/cenkalti/backoff">https://github.com/cenkalti/backoff</a>.</p>
+
+<p>The reason for a separate library, is that this library handles http status
+codes to know whether to retry or not.  HTTP codes in range 500-599 are
+retried. Connection failures are also retried. Status codes 400-499 are
+considered permanent errors and are not retried.</p>
+
+<p>The Retry function wraps any function that returns <code>(*http.Response, error)</code>.</p>
+
+<p>For example, the following code that is not using retries:</p>
+
+<div class="highlight highlight-go"><pre><span class="pl-smi">res</span>, <span class="pl-smi">err</span> <span class="pl-k">:=</span> http.<span class="pl-c1">Get</span>(<span class="pl-s"><span class="pl-pds">"</span>http://www.google.com/robots.txt<span class="pl-pds">"</span></span>)</pre></div>
+
+<p>can be rewritten as:</p>
+
+<div class="highlight highlight-go"><pre><span class="pl-smi">res</span>, <span class="pl-smi">attempts</span>, <span class="pl-smi">err</span> <span class="pl-k">:=</span> httpbackoff.<span class="pl-c1">Retry</span>(<span class="pl-k">func</span><span class="pl-en">() </span>(*<span class="pl-v">http</span>.<span class="pl-v">Response</span>, <span class="pl-v">error</span>) { <span class="pl-k">return</span> http.<span class="pl-c1">Get</span>(<span class="pl-s"><span class="pl-pds">"</span>http://www.google.com/robots.txt<span class="pl-pds">"</span></span>) })</pre></div>
+
+<p>Please note the additional return value <code>attempts</code> is an <code>int</code> specifying how
+many http calls were made (i.e. = 1 if no retries, otherwise &gt; 1).</p>
+
+<p>The go http package has 11 functions that return <code>(*http.Reponse, error)</code>:</p>
+
+<ul>
+<li><a href="http://golang.org/pkg/net/http/#Client.Do">http://golang.org/pkg/net/http/#Client.Do</a></li>
+<li><a href="http://golang.org/pkg/net/http/#Client.Get">http://golang.org/pkg/net/http/#Client.Get</a></li>
+<li><a href="http://golang.org/pkg/net/http/#Client.Head">http://golang.org/pkg/net/http/#Client.Head</a></li>
+<li><a href="http://golang.org/pkg/net/http/#Client.Post">http://golang.org/pkg/net/http/#Client.Post</a></li>
+<li><a href="http://golang.org/pkg/net/http/#Client.PostForm">http://golang.org/pkg/net/http/#Client.PostForm</a></li>
+<li><a href="http://golang.org/pkg/net/http/#Get">http://golang.org/pkg/net/http/#Get</a></li>
+<li><a href="http://golang.org/pkg/net/http/#Head">http://golang.org/pkg/net/http/#Head</a></li>
+<li><a href="http://golang.org/pkg/net/http/#Post">http://golang.org/pkg/net/http/#Post</a></li>
+<li><a href="http://golang.org/pkg/net/http/#PostForm">http://golang.org/pkg/net/http/#PostForm</a></li>
+<li><a href="http://golang.org/pkg/net/http/#ReadResponse">http://golang.org/pkg/net/http/#ReadResponse</a></li>
+<li><a href="http://golang.org/pkg/net/http/#Transport.RoundTrip">http://golang.org/pkg/net/http/#Transport.RoundTrip</a></li>
+</ul>
+
+<p>To simplify using these functions, 11 utility functions have been written that
+wrap these. Therefore you can simplify this example above further with:</p>
+
+<div class="highlight highlight-go"><pre><span class="pl-smi">res</span>, <span class="pl-smi">_</span>, <span class="pl-smi">err</span> <span class="pl-k">:=</span> httpbackoff.<span class="pl-c1">Get</span>(<span class="pl-s"><span class="pl-pds">"</span>http://www.google.com/robots.txt<span class="pl-pds">"</span></span>)</pre></div>
+
+<h2>
+<a id="configuring-backoff-settings" class="anchor" href="#configuring-backoff-settings" aria-hidden="true"><span class="octicon octicon-link"></span></a>Configuring backoff settings</h2>
+
+<p>Do something like this before making http calls with the library:</p>
+
+<div class="highlight highlight-go"><pre><span class="pl-k">import</span> <span class="pl-s"><span class="pl-pds">"</span>github.com/cenkalti/backoff<span class="pl-pds">"</span></span>
+
+...
+...
+
+httpbackoff.<span class="pl-smi">BackOffSettings</span> = &amp;backoff.<span class="pl-smi">ExponentialBackOff</span>{
+    <span class="pl-v">InitialInterval</span>:     <span class="pl-c1">1</span> * time.<span class="pl-smi">Millisecond</span>,
+    <span class="pl-v">RandomizationFactor</span>: <span class="pl-c1">0.2</span>,
+    <span class="pl-v">Multiplier</span>:          <span class="pl-c1">1.2</span>,
+    <span class="pl-v">MaxInterval</span>:         <span class="pl-c1">5</span> * time.<span class="pl-smi">Millisecond</span>,
+    <span class="pl-v">MaxElapsedTime</span>:      <span class="pl-c1">20</span> * time.<span class="pl-smi">Millisecond</span>,
+    <span class="pl-v">Clock</span>:               backoff.<span class="pl-smi">SystemClock</span>,
+}</pre></div>
+
+<p>Please note these are global settings to the module, so you can't concurrently
+use different backoff settings.</p>
+
+<h2>
+<a id="testing" class="anchor" href="#testing" aria-hidden="true"><span class="octicon octicon-link"></span></a>Testing</h2>
+
+<p>The package has tests, which run in travis. See <a href="http://travis-ci.org/taskcluster/httpbackoff">http://travis-ci.org/taskcluster/httpbackoff</a>.</p>
+
+<h2>
+<a id="concurrency" class="anchor" href="#concurrency" aria-hidden="true"><span class="octicon octicon-link"></span></a>Concurrency</h2>
+
+<p>As far as I am aware, there is nothing in this library that prevents it from
+being used concurrently. Please let me know if you find any problems!</p>
+
+<h2>
+<a id="contributing" class="anchor" href="#contributing" aria-hidden="true"><span class="octicon octicon-link"></span></a>Contributing</h2>
+
+<p>Contributions are welcome. Please fork, and issue a Pull Request back with an
+explanation of your changes. Also please include tests for any functional
+changes.</p>
+
+      <footer class="site-footer">
+        <span class="site-footer-owner"><a href="https://github.com/taskcluster/httpbackoff">httpbackoff</a> is maintained by <a href="https://github.com/taskcluster">taskcluster</a>.</span>
+
+        <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the <a href="https://github.com/jasonlong/cayman-theme">Cayman theme</a> by <a href="https://twitter.com/jasonlong">Jason Long</a>.</span>
+      </footer>
+
+    </section>
+
+  
+  </body>
+</html>
+
