@@ -29,17 +29,17 @@ many http calls were made (i.e. = 1 if no retries, otherwise > 1).
 
 The go http package has 11 functions that return `(*http.Reponse, error)`:
 
-* https://golang.org/pkg/net/http/#Client.Do
-* https://golang.org/pkg/net/http/#Client.Get
-* https://golang.org/pkg/net/http/#Client.Head
-* https://golang.org/pkg/net/http/#Client.Post
-* https://golang.org/pkg/net/http/#Client.PostForm
-* https://golang.org/pkg/net/http/#Get
-* https://golang.org/pkg/net/http/#Head
-* https://golang.org/pkg/net/http/#Post
-* https://golang.org/pkg/net/http/#PostForm
-* https://golang.org/pkg/net/http/#ReadResponse
-* https://golang.org/pkg/net/http/#Transport.RoundTrip
+* http://golang.org/pkg/net/http/#Client.Do
+* http://golang.org/pkg/net/http/#Client.Get
+* http://golang.org/pkg/net/http/#Client.Head
+* http://golang.org/pkg/net/http/#Client.Post
+* http://golang.org/pkg/net/http/#Client.PostForm
+* http://golang.org/pkg/net/http/#Get
+* http://golang.org/pkg/net/http/#Head
+* http://golang.org/pkg/net/http/#Post
+* http://golang.org/pkg/net/http/#PostForm
+* http://golang.org/pkg/net/http/#ReadResponse
+* http://golang.org/pkg/net/http/#Transport.RoundTrip
 
 To simplify using these functions, 11 utility functions have been written that
 wrap these. Therefore you can simplify this example above further with:
