@@ -20,6 +20,19 @@
 //
 // The methods in this library should be able to run concurrently in multiple
 // go routines.
+//
+// Example Usage
+//
+// Consider this trivial HTTP GET request:
+//
+//  res, err := http.Get("http://www.google.com/robots.txt")
+//
+// This can be rewritten as follows, enabling automatic retries:
+//
+//  res, attempts, err := httpbackoff.Get("http://www.google.com/robots.txt")
+//
+// The variable attempts will store the number of http calls that were made
+// (one plus the number of retries).
 package httpbackoff
 
 import (
