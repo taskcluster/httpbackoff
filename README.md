@@ -13,8 +13,8 @@ considered permanent errors and are not retried.
 The Retry function performs the http request and retries if temporary errors
 occur. It takes a single parameter as its input - a function to perform the
 http request. This function must return `(resp *http.Response, tempError error,
-permError error)` where tempError must be non-nil if a temporary error occurs
-(e.g.  dropped connection), and permError must be non-nil if an error occurs
+permError error)` where `tempError` must be non-nil if a temporary error occurs
+(e.g.  dropped connection), and `permError` must be non-nil if an error occurs
 that does not warrant retrying the request (e.g. badly formed url).
 
 For example, the following code that is not using retries:
