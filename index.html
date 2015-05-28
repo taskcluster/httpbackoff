@@ -33,7 +33,12 @@ codes to know whether to retry or not.  HTTP codes in range 500-599 are
 retried. Connection failures are also retried. Status codes 400-499 are
 considered permanent errors and are not retried.</p>
 
-<p>The Retry function wraps any function that returns <code>(*http.Response, error)</code>.</p>
+<p>The Retry function performs the http request and retries if temporary errors
+occur. It takes a single parameter as its input - a function to perform the
+http request. This function must return <code>(resp *http.Response, tempError error,
+permError error)</code> where tempError must be non-nil if a temporary error occurs
+(e.g.  dropped connection), and permError must be non-nil if an error occurs
+that does not warrant retrying the request (e.g. badly formed url).</p>
 
 <p>For example, the following code that is not using retries:</p>
 
@@ -41,7 +46,11 @@ considered permanent errors and are not retried.</p>
 
 <p>can be rewritten as:</p>
 
-<div class="highlight highlight-go"><pre><span class="pl-smi">res</span>, <span class="pl-smi">attempts</span>, <span class="pl-smi">err</span> <span class="pl-k">:=</span> httpbackoff.<span class="pl-c1">Retry</span>(<span class="pl-k">func</span><span class="pl-en">() </span>(*<span class="pl-v">http</span>.<span class="pl-v">Response</span>, <span class="pl-v">error</span>) { <span class="pl-k">return</span> http.<span class="pl-c1">Get</span>(<span class="pl-s"><span class="pl-pds">"</span>http://www.google.com/robots.txt<span class="pl-pds">"</span></span>) })</pre></div>
+<div class="highlight highlight-go"><pre><span class="pl-smi">res</span>, <span class="pl-smi">attempts</span>, <span class="pl-smi">err</span> <span class="pl-k">:=</span> httpbackoff.<span class="pl-c1">Retry</span>(<span class="pl-k">func</span><span class="pl-en">() </span>(*<span class="pl-v">http</span>.<span class="pl-v">Response</span>, <span class="pl-v">error</span>, <span class="pl-v">error</span>) {
+    <span class="pl-smi">resp</span>, <span class="pl-smi">err</span> <span class="pl-k">:=</span> http.<span class="pl-c1">Get</span>(<span class="pl-s"><span class="pl-pds">"</span>http://www.google.com/robots.txt<span class="pl-pds">"</span></span>)
+    <span class="pl-c">// assume all errors are temporary</span>
+    <span class="pl-k">return</span> resp, err, <span class="pl-c1">nil</span>
+})</pre></div>
 
 <p>Please note the additional return value <code>attempts</code> is an <code>int</code> specifying how
 many http calls were made (i.e. = 1 if no retries, otherwise &gt; 1).</p>
