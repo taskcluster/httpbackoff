@@ -10,7 +10,12 @@ codes to know whether to retry or not.  HTTP codes in range 500-599 are
 retried. Connection failures are also retried. Status codes 400-499 are
 considered permanent errors and are not retried.
 
-The Retry function wraps any function that returns `(*http.Response, error)`.
+The Retry function performs the http request and retries if temporary errors
+occur. It takes a single parameter as its input - a function to perform the
+http request. This function must return `(resp *http.Response, tempError error,
+permError error)` where tempError must be non-nil if a temporary error occurs
+(e.g.  dropped connection), and permError must be non-nil if an error occurs
+that does not warrant retrying the request (e.g. badly formed url).
 
 For example, the following code that is not using retries:
 
@@ -21,7 +26,11 @@ res, err := http.Get("http://www.google.com/robots.txt")
 can be rewritten as:
 
 ```go
-res, attempts, err := httpbackoff.Retry(func() (*http.Response, error) { return http.Get("http://www.google.com/robots.txt") })
+res, attempts, err := httpbackoff.Retry(func() (*http.Response, error, error) {
+	resp, err := http.Get("http://www.google.com/robots.txt")
+	// assume all errors are temporary
+    return resp, err, nil
+})
 ```
 
 Please note the additional return value `attempts` is an `int` specifying how
