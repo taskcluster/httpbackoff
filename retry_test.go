@@ -3,7 +3,6 @@ package httpbackoff
 // See test_setup_test.go for test setup...
 
 import (
-	"io/ioutil"
 	"testing"
 )
 
@@ -12,11 +11,11 @@ import (
 // library retries until it gets the 200 resp.
 func TestRetry5xx(t *testing.T) {
 
-	handler.QueueResponse("fail", 500)
-	handler.QueueResponse("fail", 501)
-	handler.QueueResponse("fail", 502)
-	handler.QueueResponse("success", 200)
-	handler.QueueResponse("fail", 502)
+	handler.QueueResponse(500)
+	handler.QueueResponse(501)
+	handler.QueueResponse(502)
+	handler.QueueResponse(200)
+	handler.QueueResponse(502)
 
 	// defer clean up in case we have t.Fatalf calls
 	defer handler.ClearResponseQueue()
@@ -30,22 +29,12 @@ func TestRetry5xx(t *testing.T) {
 	if statusCode := resp.StatusCode; statusCode != 200 {
 		t.Errorf("API retry logic broken - expected response code 200, but received code %v...\n", statusCode)
 	}
-
-	body, err := ioutil.ReadAll(resp.Body)
-
-	if err != nil {
-		t.Fatalf("%v\n", err)
-	}
-
-	if string(body) != "success" {
-		t.Errorf("Was expecting http response 'success' but actually got '%v'...\n", body)
-	}
 }
 
 // Want to make sure 4xx errors are not retried...
 func TestRetry4xx(t *testing.T) {
-	handler.QueueResponse("fail", 409)
-	handler.QueueResponse("success", 200)
+	handler.QueueResponse(409)
+	handler.QueueResponse(200)
 
 	// defer clean up in case we have t.Fatalf calls
 	defer handler.ClearResponseQueue()
@@ -59,16 +48,6 @@ func TestRetry4xx(t *testing.T) {
 
 	if statusCode := resp.StatusCode; statusCode != 409 {
 		t.Errorf("API retry logic broken - expected response code 409, but received code %v...\n", statusCode)
-	}
-
-	body, err := ioutil.ReadAll(resp.Body)
-
-	if err != nil {
-		t.Fatalf("%v\n", err)
-	}
-
-	if string(body) != "fail" {
-		t.Errorf("Was expecting http response 'fail' but actually got '%v'...\n", body)
 	}
 }
 

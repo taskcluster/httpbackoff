@@ -41,6 +41,7 @@ import (
 	D "github.com/tj/go-debug"
 	"io"
 	"net/http"
+	"net/http/httputil"
 	"net/url"
 	"strconv"
 	"time"
@@ -93,18 +94,24 @@ func Retry(httpCall func() (resp *http.Response, tempError error, permError erro
 		if permError != nil {
 			return nil
 		}
+		// this is a no-op
+		raw, readErr := httputil.DumpResponse(response, true)
+		out := ""
+		if readErr == nil {
+			out = string(raw)
+		}
 		// now check if http response code is such that we should retry [500, 600)...
 		if respCode := response.StatusCode; respCode/100 == 5 {
 			return BadHttpResponseCode{
 				HttpResponseCode: respCode,
-				Message:          "(Intermittent) HTTP response code " + strconv.Itoa(respCode),
+				Message:          "(Intermittent) HTTP response code " + strconv.Itoa(respCode) + "\n" + out,
 			}
 		}
 		// now check http response code is ok [200, 300)...
 		if respCode := response.StatusCode; respCode/100 != 2 {
 			permError = BadHttpResponseCode{
 				HttpResponseCode: respCode,
-				Message:          "(Permanent) HTTP response code " + strconv.Itoa(respCode),
+				Message:          "(Permanent) HTTP response code " + strconv.Itoa(respCode) + "\n" + out,
 			}
 			return nil
 		}

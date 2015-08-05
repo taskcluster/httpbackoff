@@ -36,7 +36,8 @@ func (this *MyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, response.body)
 }
 
-func (this *MyHandler) QueueResponse(body string, statusCode int) {
+func (this *MyHandler) QueueResponse(statusCode int) {
+	body := fmt.Sprintf("This is a *fake* HTTP %d response body for testing purposes", statusCode)
 	this.QueuedResponses = append(this.QueuedResponses, HTTPResponse{body: body, statusCode: statusCode})
 }
 
