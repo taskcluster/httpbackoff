@@ -37,23 +37,20 @@ package httpbackoff
 
 import (
 	"bufio"
-	"github.com/cenkalti/backoff"
-	D "github.com/tj/go-debug"
 	"io"
+	"log"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"strconv"
 	"time"
+
+	"github.com/cenkalti/backoff"
 )
 
 var (
 	// These defaults can be replaced by a library user at runtime...
 	BackOffSettings *backoff.ExponentialBackOff = backoff.NewExponentialBackOff()
-
-	// Used for logging based on DEBUG environment variable
-	// See github.com/tj/go-debug
-	debug = D.Debug("httpbackoff")
 )
 
 // Any non 2xx HTTP status code is considered a bad response code, and will
@@ -120,7 +117,7 @@ func Retry(httpCall func() (resp *http.Response, tempError error, permError erro
 
 	// Make HTTP API calls using an exponential backoff algorithm...
 	backoff.RetryNotify(doHttpCall, BackOffSettings, func(err error, wait time.Duration) {
-		debug("Error: %s", err)
+		log.Printf("Error: %s", err)
 	})
 
 	switch {
