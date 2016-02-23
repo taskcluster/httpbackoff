@@ -2,13 +2,14 @@ package httpbackoff
 
 import (
 	"fmt"
-	"github.com/cenkalti/backoff"
 	"io"
 	"net"
 	"net/http"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/cenkalti/backoff"
 )
 
 var (
@@ -87,8 +88,8 @@ func TestMain(m *testing.M) {
 // start up http service
 func startServingHTTP() error {
 	handler = NewMyHandler()
-	server = &http.Server{Addr: ":50849", Handler: handler}
-	listener, err = net.Listen("tcp", ":50849")
+	server = &http.Server{Addr: "localhost:50849", Handler: handler}
+	listener, err = net.Listen("tcp", "localhost:50849")
 	return err
 }
 
