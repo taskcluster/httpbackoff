@@ -115,8 +115,18 @@ func Retry(httpCall func() (resp *http.Response, tempError error, permError erro
 		return nil
 	}
 
+	// Duplicate backoff settings to avoid race conditions when used for concurrent requests.
+	backoffSettings := &backoff.ExponentialBackOff{
+		InitialInterval:     BackOffSettings.InitialInterval,
+		RandomizationFactor: BackOffSettings.RandomizationFactor,
+		Multiplier:          BackOffSettings.Multiplier,
+		MaxInterval:         BackOffSettings.MaxInterval,
+		MaxElapsedTime:      BackOffSettings.MaxElapsedTime,
+		Clock:               BackOffSettings.Clock,
+	}
+
 	// Make HTTP API calls using an exponential backoff algorithm...
-	backoff.RetryNotify(doHttpCall, BackOffSettings, func(err error, wait time.Duration) {
+	backoff.RetryNotify(doHttpCall, backoffSettings, func(err error, wait time.Duration) {
 		log.Printf("Error: %s", err)
 	})
 
