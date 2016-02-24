@@ -29,7 +29,7 @@ res, err := http.Get("http://www.google.com/robots.txt")
 can be rewritten as:
 
 ```go
-res, attempts, err := httpbackoff.Retry(func() (*http.Response, error, error) {
+res, attempts, err := httpbackoff.New().Retry(func() (*http.Response, error, error) {
 	resp, err := http.Get("http://www.google.com/robots.txt")
 	// assume all errors are temporary
     return resp, err, nil
@@ -57,26 +57,44 @@ To simplify using these functions, 11 utility functions have been written that
 wrap these. Therefore you can simplify this example above further with:
 
 ```go
-res, _, err := httpbackoff.Get("http://www.google.com/robots.txt")
+res, _, err := httpbackoff.New().Get("http://www.google.com/robots.txt")
 ```
 
 ## Configuring backoff settings
 
-Do something like this before making http calls with the library:
+Here is a simple example using custom backoff settings.
 
 ```go
-import "github.com/cenkalti/backoff"
+package main
 
-...
-...
+import (
+	"log"
+	"net/http/httputil"
+	"time"
 
-httpbackoff.BackOffSettings = &backoff.ExponentialBackOff{
-	InitialInterval:     1 * time.Millisecond,
-	RandomizationFactor: 0.2,
-	Multiplier:          1.2,
-	MaxInterval:         5 * time.Millisecond,
-	MaxElapsedTime:      20 * time.Millisecond,
-	Clock:               backoff.SystemClock,
+	"github.com/cenkalti/backoff"
+	"github.com/taskcluster/httpbackoff"
+)
+
+func main() {
+	customBackOff := &httpbackoff.ExponentialBackOff{
+		InitialInterval:     1 * time.Millisecond,
+		RandomizationFactor: 0.2,
+		Multiplier:          1.2,
+		MaxInterval:         5 * time.Millisecond,
+		MaxElapsedTime:      20 * time.Millisecond,
+		Clock:               backoff.SystemClock,
+	}
+
+	res, _, err := customBackOff.Get("http://www.google.com/robots.txt")
+	if err != nil {
+		log.Fatalf("%s", err)
+	}
+	data, err := httputil.DumpResponse(res, true)
+	if err != nil {
+		log.Fatalf("%s", err)
+	}
+	log.Print(string(data))
 }
 ```
 

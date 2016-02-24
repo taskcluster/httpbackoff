@@ -20,7 +20,7 @@ func TestRetry5xx(t *testing.T) {
 	// defer clean up in case we have t.Fatalf calls
 	defer handler.ClearResponseQueue()
 
-	resp, _, err := Get("http://localhost:50849/TestRetry5xx")
+	resp, _, err := backOffSettings.Get("http://localhost:50849/TestRetry5xx")
 
 	if err != nil {
 		t.Fatalf("%v\n", err)
@@ -39,7 +39,7 @@ func TestRetry4xx(t *testing.T) {
 	// defer clean up in case we have t.Fatalf calls
 	defer handler.ClearResponseQueue()
 
-	resp, _, err := Get("http://localhost:50849/TestRetry4xx")
+	resp, _, err := backOffSettings.Get("http://localhost:50849/TestRetry4xx")
 
 	// NB: this is == not != since we *want* an error
 	if err == nil {
@@ -55,7 +55,7 @@ func TestRetry4xx(t *testing.T) {
 func TestNetworkFailure(t *testing.T) {
 
 	// bad port
-	_, attempts, err := Get("http://localhost:40849/TestNetworkFailure")
+	_, attempts, err := backOffSettings.Get("http://localhost:40849/TestNetworkFailure")
 
 	// NB: this is == not != since we *want* an error
 	if err == nil {

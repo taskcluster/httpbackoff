@@ -9,9 +9,6 @@
 // If the last HTTP request made does not result in a 2xx HTTP status code, an
 // error is returned, together with the data.
 //
-// The backoff settings can be configured via the global package variable
-// BackOffSettings.
-//
 // There are several utility methods that wrap the standard net/http package
 // calls.
 //
@@ -29,7 +26,7 @@
 //
 // This can be rewritten as follows, enabling automatic retries:
 //
-//  res, attempts, err := httpbackoff.Get("http://www.google.com/robots.txt")
+//  res, attempts, err := httpbackoff.New().Get("http://www.google.com/robots.txt")
 //
 // The variable attempts stores the number of http calls that were made (one
 // plus the number of retries).
@@ -48,10 +45,12 @@ import (
 	"github.com/cenkalti/backoff"
 )
 
-var (
-	// These defaults can be replaced by a library user at runtime...
-	BackOffSettings *backoff.ExponentialBackOff = backoff.NewExponentialBackOff()
-)
+type ExponentialBackOff backoff.ExponentialBackOff
+
+func New() *ExponentialBackOff {
+	x := ExponentialBackOff(*backoff.NewExponentialBackOff())
+	return &x
+}
 
 // Any non 2xx HTTP status code is considered a bad response code, and will
 // result in a BadHttpResponseCode.
@@ -78,7 +77,7 @@ func (err BadHttpResponseCode) Error() string {
 // since Retry will take care of it.
 //
 // Concurrent use of this library method is supported.
-func Retry(httpCall func() (resp *http.Response, tempError error, permError error)) (*http.Response, int, error) {
+func (backOffSettings *ExponentialBackOff) Retry(httpCall func() (resp *http.Response, tempError error, permError error)) (*http.Response, int, error) {
 	var tempError, permError error
 	var response *http.Response
 	attempts := 0
@@ -115,18 +114,9 @@ func Retry(httpCall func() (resp *http.Response, tempError error, permError erro
 		return nil
 	}
 
-	// Duplicate backoff settings to avoid race conditions when used for concurrent requests.
-	backoffSettings := &backoff.ExponentialBackOff{
-		InitialInterval:     BackOffSettings.InitialInterval,
-		RandomizationFactor: BackOffSettings.RandomizationFactor,
-		Multiplier:          BackOffSettings.Multiplier,
-		MaxInterval:         BackOffSettings.MaxInterval,
-		MaxElapsedTime:      BackOffSettings.MaxElapsedTime,
-		Clock:               BackOffSettings.Clock,
-	}
-
 	// Make HTTP API calls using an exponential backoff algorithm...
-	backoff.RetryNotify(doHttpCall, backoffSettings, func(err error, wait time.Duration) {
+	b := backoff.ExponentialBackOff(*backOffSettings)
+	backoff.RetryNotify(doHttpCall, &b, func(err error, wait time.Duration) {
 		log.Printf("Error: %s", err)
 	})
 
@@ -141,8 +131,8 @@ func Retry(httpCall func() (resp *http.Response, tempError error, permError erro
 }
 
 // Retry wrapper for http://golang.org/pkg/net/http/#Get where attempts is the number of http calls made (one plus number of retries).
-func Get(url string) (resp *http.Response, attempts int, err error) {
-	return Retry(func() (*http.Response, error, error) {
+func (backOffSettings *ExponentialBackOff) Get(url string) (resp *http.Response, attempts int, err error) {
+	return backOffSettings.Retry(func() (*http.Response, error, error) {
 		resp, err := http.Get(url)
 		// assume all errors should result in a retry
 		return resp, err, nil
@@ -150,8 +140,8 @@ func Get(url string) (resp *http.Response, attempts int, err error) {
 }
 
 // Retry wrapper for http://golang.org/pkg/net/http/#Head where attempts is the number of http calls made (one plus number of retries).
-func Head(url string) (resp *http.Response, attempts int, err error) {
-	return Retry(func() (*http.Response, error, error) {
+func (backOffSettings *ExponentialBackOff) Head(url string) (resp *http.Response, attempts int, err error) {
+	return backOffSettings.Retry(func() (*http.Response, error, error) {
 		resp, err := http.Head(url)
 		// assume all errors should result in a retry
 		return resp, err, nil
@@ -159,8 +149,8 @@ func Head(url string) (resp *http.Response, attempts int, err error) {
 }
 
 // Retry wrapper for http://golang.org/pkg/net/http/#Post where attempts is the number of http calls made (one plus number of retries).
-func Post(url string, bodyType string, body io.Reader) (resp *http.Response, attempts int, err error) {
-	return Retry(func() (*http.Response, error, error) {
+func (backOffSettings *ExponentialBackOff) Post(url string, bodyType string, body io.Reader) (resp *http.Response, attempts int, err error) {
+	return backOffSettings.Retry(func() (*http.Response, error, error) {
 		resp, err := http.Post(url, bodyType, body)
 		// assume all errors should result in a retry
 		return resp, err, nil
@@ -168,8 +158,8 @@ func Post(url string, bodyType string, body io.Reader) (resp *http.Response, att
 }
 
 // Retry wrapper for http://golang.org/pkg/net/http/#PostForm where attempts is the number of http calls made (one plus number of retries).
-func PostForm(url string, data url.Values) (resp *http.Response, attempts int, err error) {
-	return Retry(func() (*http.Response, error, error) {
+func (backOffSettings *ExponentialBackOff) PostForm(url string, data url.Values) (resp *http.Response, attempts int, err error) {
+	return backOffSettings.Retry(func() (*http.Response, error, error) {
 		resp, err := http.PostForm(url, data)
 		// assume all errors should result in a retry
 		return resp, err, nil
@@ -177,8 +167,8 @@ func PostForm(url string, data url.Values) (resp *http.Response, attempts int, e
 }
 
 // Retry wrapper for http://golang.org/pkg/net/http/#ReadResponse where attempts is the number of http calls made (one plus number of retries).
-func ReadResponse(r *bufio.Reader, req *http.Request) (resp *http.Response, attempts int, err error) {
-	return Retry(func() (*http.Response, error, error) {
+func (backOffSettings *ExponentialBackOff) ReadResponse(r *bufio.Reader, req *http.Request) (resp *http.Response, attempts int, err error) {
+	return backOffSettings.Retry(func() (*http.Response, error, error) {
 		resp, err := http.ReadResponse(r, req)
 		// assume all errors should result in a retry
 		return resp, err, nil
@@ -186,8 +176,8 @@ func ReadResponse(r *bufio.Reader, req *http.Request) (resp *http.Response, atte
 }
 
 // Retry wrapper for http://golang.org/pkg/net/http/#Client.Do where attempts is the number of http calls made (one plus number of retries).
-func ClientDo(c *http.Client, req *http.Request) (resp *http.Response, attempts int, err error) {
-	return Retry(func() (*http.Response, error, error) {
+func (backOffSettings *ExponentialBackOff) ClientDo(c *http.Client, req *http.Request) (resp *http.Response, attempts int, err error) {
+	return backOffSettings.Retry(func() (*http.Response, error, error) {
 		resp, err := c.Do(req)
 		// assume all errors should result in a retry
 		return resp, err, nil
@@ -195,8 +185,8 @@ func ClientDo(c *http.Client, req *http.Request) (resp *http.Response, attempts 
 }
 
 // Retry wrapper for http://golang.org/pkg/net/http/#Client.Get where attempts is the number of http calls made (one plus number of retries).
-func ClientGet(c *http.Client, url string) (resp *http.Response, attempts int, err error) {
-	return Retry(func() (*http.Response, error, error) {
+func (backOffSettings *ExponentialBackOff) ClientGet(c *http.Client, url string) (resp *http.Response, attempts int, err error) {
+	return backOffSettings.Retry(func() (*http.Response, error, error) {
 		resp, err := c.Get(url)
 		// assume all errors should result in a retry
 		return resp, err, nil
@@ -204,8 +194,8 @@ func ClientGet(c *http.Client, url string) (resp *http.Response, attempts int, e
 }
 
 // Retry wrapper for http://golang.org/pkg/net/http/#Client.Head where attempts is the number of http calls made (one plus number of retries).
-func ClientHead(c *http.Client, url string) (resp *http.Response, attempts int, err error) {
-	return Retry(func() (*http.Response, error, error) {
+func (backOffSettings *ExponentialBackOff) ClientHead(c *http.Client, url string) (resp *http.Response, attempts int, err error) {
+	return backOffSettings.Retry(func() (*http.Response, error, error) {
 		resp, err := c.Head(url)
 		// assume all errors should result in a retry
 		return resp, err, nil
@@ -213,8 +203,8 @@ func ClientHead(c *http.Client, url string) (resp *http.Response, attempts int, 
 }
 
 // Retry wrapper for http://golang.org/pkg/net/http/#Client.Post where attempts is the number of http calls made (one plus number of retries).
-func ClientPost(c *http.Client, url string, bodyType string, body io.Reader) (resp *http.Response, attempts int, err error) {
-	return Retry(func() (*http.Response, error, error) {
+func (backOffSettings *ExponentialBackOff) ClientPost(c *http.Client, url string, bodyType string, body io.Reader) (resp *http.Response, attempts int, err error) {
+	return backOffSettings.Retry(func() (*http.Response, error, error) {
 		resp, err := c.Post(url, bodyType, body)
 		// assume all errors should result in a retry
 		return resp, err, nil
@@ -222,8 +212,8 @@ func ClientPost(c *http.Client, url string, bodyType string, body io.Reader) (re
 }
 
 // Retry wrapper for http://golang.org/pkg/net/http/#Client.PostForm where attempts is the number of http calls made (one plus number of retries).
-func ClientPostForm(c *http.Client, url string, data url.Values) (resp *http.Response, attempts int, err error) {
-	return Retry(func() (*http.Response, error, error) {
+func (backOffSettings *ExponentialBackOff) ClientPostForm(c *http.Client, url string, data url.Values) (resp *http.Response, attempts int, err error) {
+	return backOffSettings.Retry(func() (*http.Response, error, error) {
 		resp, err := c.PostForm(url, data)
 		// assume all errors should result in a retry
 		return resp, err, nil
@@ -231,8 +221,8 @@ func ClientPostForm(c *http.Client, url string, data url.Values) (resp *http.Res
 }
 
 // Retry wrapper for http://golang.org/pkg/net/http/#Transport.RoundTrip where attempts is the number of http calls made (one plus number of retries).
-func RoundTrip(t *http.Transport, req *http.Request) (resp *http.Response, attempts int, err error) {
-	return Retry(func() (*http.Response, error, error) {
+func (backOffSettings *ExponentialBackOff) RoundTrip(t *http.Transport, req *http.Request) (resp *http.Response, attempts int, err error) {
+	return backOffSettings.Retry(func() (*http.Response, error, error) {
 		resp, err := t.RoundTrip(req)
 		// assume all errors should result in a retry
 		return resp, err, nil
