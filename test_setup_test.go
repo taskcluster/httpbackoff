@@ -13,11 +13,11 @@ import (
 )
 
 var (
-	err             error
-	handler         *MyHandler
-	listener        net.Listener
-	server          *http.Server
-	backOffSettings *ExponentialBackOff
+	err        error
+	handler    *MyHandler
+	listener   net.Listener
+	server     *http.Server
+	testClient *Client
 )
 
 // Handler for stubbing http requests from auth API endpoint
@@ -55,13 +55,15 @@ func NewMyHandler() *MyHandler {
 func TestMain(m *testing.M) {
 
 	// Set up appropriate backoff settings to tests run quickly...
-	backOffSettings = &ExponentialBackOff{
-		InitialInterval:     1 * time.Millisecond,
-		RandomizationFactor: 0.2,
-		Multiplier:          1.2,
-		MaxInterval:         5 * time.Millisecond,
-		MaxElapsedTime:      20 * time.Millisecond,
-		Clock:               backoff.SystemClock,
+	testClient = &Client{
+		BackOffSettings: &backoff.ExponentialBackOff{
+			InitialInterval:     1 * time.Millisecond,
+			RandomizationFactor: 0.2,
+			Multiplier:          1.2,
+			MaxInterval:         5 * time.Millisecond,
+			MaxElapsedTime:      20 * time.Millisecond,
+			Clock:               backoff.SystemClock,
+		},
 	}
 
 	err = startServingHTTP()
