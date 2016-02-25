@@ -39,7 +39,8 @@ res, attempts, err := httpbackoff.Retry(func() (*http.Response, error, error) {
 Please note the additional return value `attempts` is an `int` specifying how
 many http calls were made (i.e. = 1 if no retries, otherwise > 1).
 
-The go http package has 11 functions that return `(*http.Reponse, error)`:
+The go http package has 10 functions that return `(*http.Reponse, error)` that
+can potentially be retried:
 
 * http://golang.org/pkg/net/http/#Client.Do
 * http://golang.org/pkg/net/http/#Client.Get
@@ -50,33 +51,52 @@ The go http package has 11 functions that return `(*http.Reponse, error)`:
 * http://golang.org/pkg/net/http/#Head
 * http://golang.org/pkg/net/http/#Post
 * http://golang.org/pkg/net/http/#PostForm
-* http://golang.org/pkg/net/http/#ReadResponse
 * http://golang.org/pkg/net/http/#Transport.RoundTrip
 
-To simplify using these functions, 11 utility functions have been written that
+To simplify using these functions, 10 utility functions have been written that
 wrap these. Therefore you can simplify this example above further with:
 
 ```go
 res, _, err := httpbackoff.Get("http://www.google.com/robots.txt")
 ```
 
-## Configuring backoff settings
+## Configuring back off settings
 
-Do something like this before making http calls with the library:
+To use cusom back off settings (for example, in testing, you might want to fail quickly), instead of calling the package functions, you can call methods of HTTPRetryClient with the same name:
 
 ```go
-import "github.com/cenkalti/backoff"
+package main
 
-...
-...
+import (
+	"log"
+	"net/http/httputil"
+	"time"
 
-httpbackoff.BackOffSettings = &backoff.ExponentialBackOff{
-	InitialInterval:     1 * time.Millisecond,
-	RandomizationFactor: 0.2,
-	Multiplier:          1.2,
-	MaxInterval:         5 * time.Millisecond,
-	MaxElapsedTime:      20 * time.Millisecond,
-	Clock:               backoff.SystemClock,
+	"github.com/cenkalti/backoff"
+	"github.com/taskcluster/httpbackoff"
+)
+
+func main() {
+	retryClient := httpbackoff.Client{
+		BackOffSettings: &backoff.ExponentialBackOff{
+			InitialInterval:     1 * time.Millisecond,
+			RandomizationFactor: 0.2,
+			Multiplier:          1.2,
+			MaxInterval:         5 * time.Millisecond,
+			MaxElapsedTime:      20 * time.Millisecond,
+			Clock:               backoff.SystemClock,
+		},
+	}
+
+	res, _, err := retryClient.Get("http://www.google.com/robots.txt")
+	if err != nil {
+		log.Fatalf("%s", err)
+	}
+	data, err := httputil.DumpResponse(res, true)
+	if err != nil {
+		log.Fatalf("%s", err)
+	}
+	log.Print(string(data))
 }
 ```
 
