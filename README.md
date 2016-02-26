@@ -39,7 +39,7 @@ res, attempts, err := httpbackoff.Retry(func() (*http.Response, error, error) {
 Please note the additional return value `attempts` is an `int` specifying how
 many http calls were made (i.e. = 1 if no retries, otherwise > 1).
 
-The go http package has 10 functions that return `(*http.Reponse, error)` that
+The go http package has 9 functions that return `(*http.Reponse, error)` that
 can potentially be retried:
 
 * http://golang.org/pkg/net/http/#Client.Do
@@ -51,9 +51,8 @@ can potentially be retried:
 * http://golang.org/pkg/net/http/#Head
 * http://golang.org/pkg/net/http/#Post
 * http://golang.org/pkg/net/http/#PostForm
-* http://golang.org/pkg/net/http/#Transport.RoundTrip
 
-To simplify using these functions, 10 utility functions have been written that
+To simplify using these functions, 9 utility functions have been written that
 wrap these. Therefore you can simplify this example above further with:
 
 ```go
