@@ -33,6 +33,7 @@
 package httpbackoff
 
 import (
+	"bufio"
 	"bytes"
 	"log"
 	"net/http"
@@ -196,9 +197,17 @@ func PostForm(url string, data url.Values) (resp *http.Response, attempts int, e
 
 // Retry wrapper for http://golang.org/pkg/net/http/#Client.Do where attempts is the number of http calls made (one plus number of retries).
 func (httpRetryClient *Client) ClientDo(c *http.Client, req *http.Request) (resp *http.Response, attempts int, err error) {
-	repeatableReq := httputil.DumpRequest(req)
+	rawReq, err := httputil.DumpRequest(req, true)
+	// fatal
+	if err != nil {
+		return nil, 0, err
+	}
 	return httpRetryClient.Retry(func() (*http.Response, error, error) {
-		resp, err := c.Do(repeatableReq)
+		req, err := http.ReadRequest(bufio.NewReader(bytes.NewBuffer(rawReq)))
+		if err != nil {
+			return nil, nil, err // fatal
+		}
+		resp, err := c.Do(req)
 		// assume all errors should result in a retry
 		return resp, err, nil
 	})
@@ -263,19 +272,4 @@ func (httpRetryClient *Client) ClientPostForm(c *http.Client, url string, data u
 // ClientPostForm works the same as HTTPRetryClient.ClientPostForm, but uses the default exponential back off settings
 func ClientPostForm(c *http.Client, url string, data url.Values) (resp *http.Response, attempts int, err error) {
 	return defaultClient.ClientPostForm(c, url, data)
-}
-
-// Retry wrapper for http://golang.org/pkg/net/http/#Transport.RoundTrip where attempts is the number of http calls made (one plus number of retries).
-func (httpRetryClient *Client) RoundTrip(t *http.Transport, req *http.Request) (resp *http.Response, attempts int, err error) {
-	return httpRetryClient.Retry(func() (*http.Response, error, error) {
-		repeatableReq := httputil.DumpRequest(req)
-		resp, err := t.RoundTrip(repeatableReq)
-		// assume all errors should result in a retry
-		return resp, err, nil
-	})
-}
-
-// RoundTrip works the same as HTTPRetryClient.RoundTrip, but uses the default exponential back off settings
-func RoundTrip(t *http.Transport, req *http.Request) (resp *http.Response, attempts int, err error) {
-	return defaultClient.RoundTrip(t, req)
 }
