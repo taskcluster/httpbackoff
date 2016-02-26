@@ -33,7 +33,7 @@
 package httpbackoff
 
 import (
-	"io"
+	"bytes"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -90,24 +90,27 @@ func (httpRetryClient *Client) Retry(httpCall func() (resp *http.Response, tempE
 		if permError != nil {
 			return nil
 		}
-		// this is a no-op
-		raw, readErr := httputil.DumpResponse(response, true)
-		out := ""
-		if readErr == nil {
-			out = string(raw)
+		// only call this if there is a non 2xx response
+		body := func(response *http.Response) string {
+			// this is a no-op
+			raw, err := httputil.DumpResponse(response, true)
+			if err == nil {
+				return string(raw)
+			}
+			return ""
 		}
 		// now check if http response code is such that we should retry [500, 600)...
 		if respCode := response.StatusCode; respCode/100 == 5 {
 			return BadHttpResponseCode{
 				HttpResponseCode: respCode,
-				Message:          "(Intermittent) HTTP response code " + strconv.Itoa(respCode) + "\n" + out,
+				Message:          "(Intermittent) HTTP response code " + strconv.Itoa(respCode) + "\n" + body(response),
 			}
 		}
 		// now check http response code is ok [200, 300)...
 		if respCode := response.StatusCode; respCode/100 != 2 {
 			permError = BadHttpResponseCode{
 				HttpResponseCode: respCode,
-				Message:          "(Permanent) HTTP response code " + strconv.Itoa(respCode) + "\n" + out,
+				Message:          "(Permanent) HTTP response code " + strconv.Itoa(respCode) + "\n" + body(response),
 			}
 			return nil
 		}
@@ -164,16 +167,16 @@ func Head(url string) (resp *http.Response, attempts int, err error) {
 }
 
 // Retry wrapper for http://golang.org/pkg/net/http/#Post where attempts is the number of http calls made (one plus number of retries).
-func (httpRetryClient *Client) Post(url string, bodyType string, body io.Reader) (resp *http.Response, attempts int, err error) {
+func (httpRetryClient *Client) Post(url string, bodyType string, body []byte) (resp *http.Response, attempts int, err error) {
 	return httpRetryClient.Retry(func() (*http.Response, error, error) {
-		resp, err := http.Post(url, bodyType, body)
+		resp, err := http.Post(url, bodyType, bytes.NewBuffer(body))
 		// assume all errors should result in a retry
 		return resp, err, nil
 	})
 }
 
 // Post works the same as HTTPRetryClient.Post, but uses the default exponential back off settings
-func Post(url string, bodyType string, body io.Reader) (resp *http.Response, attempts int, err error) {
+func Post(url string, bodyType string, body []byte) (resp *http.Response, attempts int, err error) {
 	return defaultClient.Post(url, bodyType, body)
 }
 
@@ -193,8 +196,9 @@ func PostForm(url string, data url.Values) (resp *http.Response, attempts int, e
 
 // Retry wrapper for http://golang.org/pkg/net/http/#Client.Do where attempts is the number of http calls made (one plus number of retries).
 func (httpRetryClient *Client) ClientDo(c *http.Client, req *http.Request) (resp *http.Response, attempts int, err error) {
+	repeatableReq := httputil.DumpRequest(req)
 	return httpRetryClient.Retry(func() (*http.Response, error, error) {
-		resp, err := c.Do(req)
+		resp, err := c.Do(repeatableReq)
 		// assume all errors should result in a retry
 		return resp, err, nil
 	})
@@ -234,16 +238,16 @@ func ClientHead(c *http.Client, url string) (resp *http.Response, attempts int, 
 }
 
 // Retry wrapper for http://golang.org/pkg/net/http/#Client.Post where attempts is the number of http calls made (one plus number of retries).
-func (httpRetryClient *Client) ClientPost(c *http.Client, url string, bodyType string, body io.Reader) (resp *http.Response, attempts int, err error) {
+func (httpRetryClient *Client) ClientPost(c *http.Client, url string, bodyType string, body []byte) (resp *http.Response, attempts int, err error) {
 	return httpRetryClient.Retry(func() (*http.Response, error, error) {
-		resp, err := c.Post(url, bodyType, body)
+		resp, err := c.Post(url, bodyType, bytes.NewBuffer(body))
 		// assume all errors should result in a retry
 		return resp, err, nil
 	})
 }
 
 // ClientPost works the same as HTTPRetryClient.ClientPost, but uses the default exponential back off settings
-func ClientPost(c *http.Client, url string, bodyType string, body io.Reader) (resp *http.Response, attempts int, err error) {
+func ClientPost(c *http.Client, url string, bodyType string, body []byte) (resp *http.Response, attempts int, err error) {
 	return defaultClient.ClientPost(c, url, bodyType, body)
 }
 
@@ -264,7 +268,8 @@ func ClientPostForm(c *http.Client, url string, data url.Values) (resp *http.Res
 // Retry wrapper for http://golang.org/pkg/net/http/#Transport.RoundTrip where attempts is the number of http calls made (one plus number of retries).
 func (httpRetryClient *Client) RoundTrip(t *http.Transport, req *http.Request) (resp *http.Response, attempts int, err error) {
 	return httpRetryClient.Retry(func() (*http.Response, error, error) {
-		resp, err := t.RoundTrip(req)
+		repeatableReq := httputil.DumpRequest(req)
+		resp, err := t.RoundTrip(repeatableReq)
 		// assume all errors should result in a retry
 		return resp, err, nil
 	})
