@@ -197,7 +197,7 @@ func PostForm(url string, data url.Values) (resp *http.Response, attempts int, e
 
 // Retry wrapper for http://golang.org/pkg/net/http/#Client.Do where attempts is the number of http calls made (one plus number of retries).
 func (httpRetryClient *Client) ClientDo(c *http.Client, req *http.Request) (resp *http.Response, attempts int, err error) {
-	rawReq, err := httputil.DumpRequest(req, true)
+	rawReq, err := httputil.DumpRequestOut(req, true)
 	// fatal
 	if err != nil {
 		return nil, 0, err
