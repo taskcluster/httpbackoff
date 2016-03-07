@@ -76,6 +76,9 @@ import (
 )
 
 func main() {
+	// Note, you only need to create a client if you want to customise
+	// the back off settings. In this example, we want to, but if you
+	// wish to use the reasonable default settings, no need to do this.
 	retryClient := httpbackoff.Client{
 		BackOffSettings: &backoff.ExponentialBackOff{
 			InitialInterval:     1 * time.Millisecond,
@@ -98,9 +101,6 @@ func main() {
 	log.Print(string(data))
 }
 ```
-
-Please note these are global settings to the module, so you can't concurrently
-use different backoff settings.
 
 ## Testing
 
