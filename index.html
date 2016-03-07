@@ -95,6 +95,9 @@ wrap these. Therefore you can simplify this example above further with:</p>
 )
 
 <span class="pl-k">func</span> <span class="pl-en">main</span>() {
+    <span class="pl-c">// Note, you only need to create a client if you want to customise</span>
+    <span class="pl-c">// the back off settings. In this example, we want to, but if you</span>
+    <span class="pl-c">// wish to use the reasonable default settings, no need to do this.</span>
     <span class="pl-smi">retryClient</span> <span class="pl-k">:=</span> httpbackoff.<span class="pl-smi">Client</span>{
         BackOffSettings: &amp;backoff.<span class="pl-smi">ExponentialBackOff</span>{
             InitialInterval:     <span class="pl-c1">1</span> * time.<span class="pl-smi">Millisecond</span>,
@@ -116,9 +119,6 @@ wrap these. Therefore you can simplify this example above further with:</p>
     }
     log.<span class="pl-c1">Print</span>(<span class="pl-k">string</span>(data))
 }</pre></div>
-
-<p>Please note these are global settings to the module, so you can't concurrently
-use different backoff settings.</p>
 
 <h2>
 <a id="testing" class="anchor" href="#testing" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Testing</h2>
