@@ -5,7 +5,7 @@
     <title>httpbackoff by taskcluster</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
-    <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
     <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
     <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
   </head>
@@ -20,10 +20,13 @@
 
     <section class="main-content">
       <h1>
-<a id="httpbackoff" class="anchor" href="#httpbackoff" aria-hidden="true"><span class="octicon octicon-link"></span></a>httpbackoff</h1>
+<a id="httpbackoff" class="anchor" href="#httpbackoff" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>httpbackoff</h1>
 
-<p><a href="http://travis-ci.org/taskcluster/httpbackoff"><img src="https://secure.travis-ci.org/taskcluster/httpbackoff.png" alt="Build Status"></a>
-<a href="https://godoc.org/github.com/taskcluster/httpbackoff"><img src="https://godoc.org/github.com/taskcluster/httpbackoff?status.png" alt="GoDoc"></a></p>
+<p><img hspace="20" align="left" src="https://tools.taskcluster.net/lib/assets/taskcluster-120.png">
+<a href="https://travis-ci.org/taskcluster/httpbackoff"><img src="https://travis-ci.org/taskcluster/httpbackoff.svg?branch=master" alt="Build Status"></a>
+<a href="https://godoc.org/github.com/taskcluster/httpbackoff"><img src="https://godoc.org/github.com/taskcluster/httpbackoff?status.svg" alt="GoDoc"></a>
+<a href="https://coveralls.io/github/taskcluster/httpbackoff?branch=master"><img src="https://coveralls.io/repos/taskcluster/httpbackoff/badge.svg?branch=master&amp;service=github" alt="Coverage Status"></a>
+<a href="http://mozilla.org/MPL/2.0"><img src="https://img.shields.io/badge/license-MPL%202.0-orange.svg" alt="License"></a></p>
 
 <p>Automatic http retries for intermittent failures, with exponential backoff,
 based on <a href="https://github.com/cenkalti/backoff">https://github.com/cenkalti/backoff</a>.</p>
@@ -42,11 +45,11 @@ that does not warrant retrying the request (e.g. badly formed url).</p>
 
 <p>For example, the following code that is not using retries:</p>
 
-<div class="highlight highlight-go"><pre><span class="pl-smi">res</span>, <span class="pl-smi">err</span> <span class="pl-k">:=</span> http.<span class="pl-c1">Get</span>(<span class="pl-s"><span class="pl-pds">"</span>http://www.google.com/robots.txt<span class="pl-pds">"</span></span>)</pre></div>
+<div class="highlight highlight-source-go"><pre><span class="pl-smi">res</span>, <span class="pl-smi">err</span> <span class="pl-k">:=</span> http.<span class="pl-c1">Get</span>(<span class="pl-s"><span class="pl-pds">"</span>http://www.google.com/robots.txt<span class="pl-pds">"</span></span>)</pre></div>
 
 <p>can be rewritten as:</p>
 
-<div class="highlight highlight-go"><pre><span class="pl-smi">res</span>, <span class="pl-smi">attempts</span>, <span class="pl-smi">err</span> <span class="pl-k">:=</span> httpbackoff.<span class="pl-c1">Retry</span>(<span class="pl-k">func</span><span class="pl-en">() </span>(*<span class="pl-v">http</span>.<span class="pl-v">Response</span>, <span class="pl-v">error</span>, <span class="pl-v">error</span>) {
+<div class="highlight highlight-source-go"><pre><span class="pl-smi">res</span>, <span class="pl-smi">attempts</span>, <span class="pl-smi">err</span> <span class="pl-k">:=</span> httpbackoff.<span class="pl-c1">Retry</span>(<span class="pl-k">func</span><span class="pl-en">() </span>(*<span class="pl-v">http</span>.<span class="pl-v">Response</span>, <span class="pl-v">error</span>, <span class="pl-v">error</span>) {
     <span class="pl-smi">resp</span>, <span class="pl-smi">err</span> <span class="pl-k">:=</span> http.<span class="pl-c1">Get</span>(<span class="pl-s"><span class="pl-pds">"</span>http://www.google.com/robots.txt<span class="pl-pds">"</span></span>)
     <span class="pl-c">// assume all errors are temporary</span>
     <span class="pl-k">return</span> resp, err, <span class="pl-c1">nil</span>
@@ -55,7 +58,8 @@ that does not warrant retrying the request (e.g. badly formed url).</p>
 <p>Please note the additional return value <code>attempts</code> is an <code>int</code> specifying how
 many http calls were made (i.e. = 1 if no retries, otherwise &gt; 1).</p>
 
-<p>The go http package has 11 functions that return <code>(*http.Reponse, error)</code>:</p>
+<p>The go http package has 9 functions that return <code>(*http.Reponse, error)</code> that
+can potentially be retried:</p>
 
 <ul>
 <li><a href="http://golang.org/pkg/net/http/#Client.Do">http://golang.org/pkg/net/http/#Client.Do</a></li>
@@ -67,50 +71,68 @@ many http calls were made (i.e. = 1 if no retries, otherwise &gt; 1).</p>
 <li><a href="http://golang.org/pkg/net/http/#Head">http://golang.org/pkg/net/http/#Head</a></li>
 <li><a href="http://golang.org/pkg/net/http/#Post">http://golang.org/pkg/net/http/#Post</a></li>
 <li><a href="http://golang.org/pkg/net/http/#PostForm">http://golang.org/pkg/net/http/#PostForm</a></li>
-<li><a href="http://golang.org/pkg/net/http/#ReadResponse">http://golang.org/pkg/net/http/#ReadResponse</a></li>
-<li><a href="http://golang.org/pkg/net/http/#Transport.RoundTrip">http://golang.org/pkg/net/http/#Transport.RoundTrip</a></li>
 </ul>
 
-<p>To simplify using these functions, 11 utility functions have been written that
+<p>To simplify using these functions, 9 utility functions have been written that
 wrap these. Therefore you can simplify this example above further with:</p>
 
-<div class="highlight highlight-go"><pre><span class="pl-smi">res</span>, <span class="pl-smi">_</span>, <span class="pl-smi">err</span> <span class="pl-k">:=</span> httpbackoff.<span class="pl-c1">Get</span>(<span class="pl-s"><span class="pl-pds">"</span>http://www.google.com/robots.txt<span class="pl-pds">"</span></span>)</pre></div>
+<div class="highlight highlight-source-go"><pre><span class="pl-smi">res</span>, <span class="pl-smi">_</span>, <span class="pl-smi">err</span> <span class="pl-k">:=</span> httpbackoff.<span class="pl-c1">Get</span>(<span class="pl-s"><span class="pl-pds">"</span>http://www.google.com/robots.txt<span class="pl-pds">"</span></span>)</pre></div>
 
 <h2>
-<a id="configuring-backoff-settings" class="anchor" href="#configuring-backoff-settings" aria-hidden="true"><span class="octicon octicon-link"></span></a>Configuring backoff settings</h2>
+<a id="configuring-back-off-settings" class="anchor" href="#configuring-back-off-settings" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Configuring back off settings</h2>
 
-<p>Do something like this before making http calls with the library:</p>
+<p>To use cusom back off settings (for example, in testing, you might want to fail quickly), instead of calling the package functions, you can call methods of HTTPRetryClient with the same name:</p>
 
-<div class="highlight highlight-go"><pre><span class="pl-k">import</span> <span class="pl-s"><span class="pl-pds">"</span>github.com/cenkalti/backoff<span class="pl-pds">"</span></span>
+<div class="highlight highlight-source-go"><pre><span class="pl-k">package</span> main
 
-...
-...
+<span class="pl-k">import</span> (
+    <span class="pl-s"><span class="pl-pds">"</span>log<span class="pl-pds">"</span></span>
+    <span class="pl-s"><span class="pl-pds">"</span>net/http/httputil<span class="pl-pds">"</span></span>
+    <span class="pl-s"><span class="pl-pds">"</span>time<span class="pl-pds">"</span></span>
 
-httpbackoff.<span class="pl-smi">BackOffSettings</span> = &amp;backoff.<span class="pl-smi">ExponentialBackOff</span>{
-    <span class="pl-v">InitialInterval</span>:     <span class="pl-c1">1</span> * time.<span class="pl-smi">Millisecond</span>,
-    <span class="pl-v">RandomizationFactor</span>: <span class="pl-c1">0.2</span>,
-    <span class="pl-v">Multiplier</span>:          <span class="pl-c1">1.2</span>,
-    <span class="pl-v">MaxInterval</span>:         <span class="pl-c1">5</span> * time.<span class="pl-smi">Millisecond</span>,
-    <span class="pl-v">MaxElapsedTime</span>:      <span class="pl-c1">20</span> * time.<span class="pl-smi">Millisecond</span>,
-    <span class="pl-v">Clock</span>:               backoff.<span class="pl-smi">SystemClock</span>,
+    <span class="pl-s"><span class="pl-pds">"</span>github.com/cenkalti/backoff<span class="pl-pds">"</span></span>
+    <span class="pl-s"><span class="pl-pds">"</span>github.com/taskcluster/httpbackoff<span class="pl-pds">"</span></span>
+)
+
+<span class="pl-k">func</span> <span class="pl-en">main</span>() {
+    <span class="pl-smi">retryClient</span> <span class="pl-k">:=</span> httpbackoff.<span class="pl-smi">Client</span>{
+        BackOffSettings: &amp;backoff.<span class="pl-smi">ExponentialBackOff</span>{
+            InitialInterval:     <span class="pl-c1">1</span> * time.<span class="pl-smi">Millisecond</span>,
+            RandomizationFactor: <span class="pl-c1">0.2</span>,
+            Multiplier:          <span class="pl-c1">1.2</span>,
+            MaxInterval:         <span class="pl-c1">5</span> * time.<span class="pl-smi">Millisecond</span>,
+            MaxElapsedTime:      <span class="pl-c1">20</span> * time.<span class="pl-smi">Millisecond</span>,
+            Clock:               backoff.<span class="pl-smi">SystemClock</span>,
+        },
+    }
+
+    <span class="pl-smi">res</span>, <span class="pl-smi">_</span>, <span class="pl-smi">err</span> <span class="pl-k">:=</span> retryClient.<span class="pl-c1">Get</span>(<span class="pl-s"><span class="pl-pds">"</span>http://www.google.com/robots.txt<span class="pl-pds">"</span></span>)
+    <span class="pl-k">if</span> err != <span class="pl-c1">nil</span> {
+        log.<span class="pl-c1">Fatalf</span>(<span class="pl-s"><span class="pl-pds">"</span><span class="pl-c1">%s</span><span class="pl-pds">"</span></span>, err)
+    }
+    <span class="pl-smi">data</span>, <span class="pl-smi">err</span> <span class="pl-k">:=</span> httputil.<span class="pl-c1">DumpResponse</span>(res, <span class="pl-c1">true</span>)
+    <span class="pl-k">if</span> err != <span class="pl-c1">nil</span> {
+        log.<span class="pl-c1">Fatalf</span>(<span class="pl-s"><span class="pl-pds">"</span><span class="pl-c1">%s</span><span class="pl-pds">"</span></span>, err)
+    }
+    log.<span class="pl-c1">Print</span>(<span class="pl-k">string</span>(data))
 }</pre></div>
 
 <p>Please note these are global settings to the module, so you can't concurrently
 use different backoff settings.</p>
 
 <h2>
-<a id="testing" class="anchor" href="#testing" aria-hidden="true"><span class="octicon octicon-link"></span></a>Testing</h2>
+<a id="testing" class="anchor" href="#testing" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Testing</h2>
 
 <p>The package has tests, which run in travis. See <a href="http://travis-ci.org/taskcluster/httpbackoff">http://travis-ci.org/taskcluster/httpbackoff</a>.</p>
 
 <h2>
-<a id="concurrency" class="anchor" href="#concurrency" aria-hidden="true"><span class="octicon octicon-link"></span></a>Concurrency</h2>
+<a id="concurrency" class="anchor" href="#concurrency" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Concurrency</h2>
 
 <p>As far as I am aware, there is nothing in this library that prevents it from
 being used concurrently. Please let me know if you find any problems!</p>
 
 <h2>
-<a id="contributing" class="anchor" href="#contributing" aria-hidden="true"><span class="octicon octicon-link"></span></a>Contributing</h2>
+<a id="contributing" class="anchor" href="#contributing" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Contributing</h2>
 
 <p>Contributions are welcome. Please fork, and issue a Pull Request back with an
 explanation of your changes. Also please include tests for any functional
@@ -127,4 +149,3 @@ changes.</p>
   
   </body>
 </html>
-
