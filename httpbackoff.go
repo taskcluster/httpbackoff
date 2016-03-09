@@ -203,11 +203,13 @@ func (httpRetryClient *Client) ClientDo(c *http.Client, req *http.Request) (resp
 		return nil, 0, err
 	}
 	return httpRetryClient.Retry(func() (*http.Response, error, error) {
-		req, err := http.ReadRequest(bufio.NewReader(bytes.NewBuffer(rawReq)))
+		newReq, err := http.ReadRequest(bufio.NewReader(bytes.NewBuffer(rawReq)))
+		newReq.RequestURI = ""
+		newReq.URL = req.URL
 		if err != nil {
 			return nil, nil, err // fatal
 		}
-		resp, err := c.Do(req)
+		resp, err := c.Do(newReq)
 		// assume all errors should result in a retry
 		return resp, err, nil
 	})
