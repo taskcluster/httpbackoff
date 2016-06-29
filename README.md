@@ -6,7 +6,7 @@
 [![License](https://img.shields.io/badge/license-MPL%202.0-orange.svg)](http://mozilla.org/MPL/2.0)
 
 Automatic http retries for intermittent failures, with exponential backoff,
-based on https://github.com/cenkalti/backoff.
+based on https://github.com/cenk/backoff.
 
 The reason for a separate library, is that this library handles http status
 codes to know whether to retry or not.  HTTP codes in range 500-599 are
@@ -71,7 +71,7 @@ import (
 	"net/http/httputil"
 	"time"
 
-	"github.com/cenkalti/backoff"
+	"github.com/cenk/backoff"
 	"github.com/taskcluster/httpbackoff"
 )
 
