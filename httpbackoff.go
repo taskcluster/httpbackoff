@@ -1,6 +1,6 @@
 // This package provides exponential backoff support for making HTTP requests.
 //
-// It uses the github.com/cenkalti/backoff algorithm.
+// It uses the github.com/cenk/backoff algorithm.
 //
 // Network failures and HTTP 5xx status codes qualify for retries.
 //
@@ -42,7 +42,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/cenkalti/backoff"
+	"github.com/cenk/backoff"
 )
 
 var defaultClient Client = Client{
@@ -71,7 +71,7 @@ func (err BadHttpResponseCode) Error() string {
 // (resp *http.Response, tempError error, permError error). Errors that should
 // cause retries should be returned as tempError. Permanent errors that should
 // not result in retries should be returned as permError. Retries are performed
-// using the exponential backoff algorithm from the github.com/cenkalti/backoff
+// using the exponential backoff algorithm from the github.com/cenk/backoff
 // package. Retry automatically treats HTTP 5xx status codes as a temporary
 // error, and any other non-2xx HTTP status codes as a permanent error. Thus
 // httpCall function does not need to handle the HTTP status code of resp,
