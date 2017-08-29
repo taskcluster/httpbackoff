@@ -206,6 +206,16 @@ func (httpRetryClient *Client) ClientDo(c *http.Client, req *http.Request) (resp
 		newReq, err := http.ReadRequest(bufio.NewReader(bytes.NewBuffer(rawReq)))
 		newReq.RequestURI = ""
 		newReq.URL = req.URL
+		// If the original request doesn't explicitly set Accept-Encoding, then
+		// the go standard library will add it, and allow gzip compression, and
+		// magically unzip the response transparently. This wouldn't be too
+		// much of a problem, except that if the header is explicitly set, then
+		// the standard library won't automatically unzip the response. This is
+		// arguably a bug in the standard library but we'll work around it by
+		// checking this specific condition.
+		if req.Header.Get("Accept-Encoding") == "" {
+			newReq.Header.Del("Accept-Encoding")
+		}
 		if err != nil {
 			return nil, nil, err // fatal
 		}
