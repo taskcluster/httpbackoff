@@ -1,6 +1,6 @@
-# httpbackoff
+<img align="right" src="http://media.taskcluster.net/logo/logo-96x120.png" />
 
-[![logo](https://tools.taskcluster.net/b2d854df0391f8b777f39a486ebbc868.png)](https://tools.taskcluster.net/b2d854df0391f8b777f39a486ebbc868.png)
+# httpbackoff
 
 [![Build Status](https://travis-ci.org/taskcluster/httpbackoff.svg?branch=master)](https://travis-ci.org/taskcluster/httpbackoff)
 [![GoDoc](https://godoc.org/github.com/taskcluster/httpbackoff?status.svg)](https://godoc.org/github.com/taskcluster/httpbackoff)
