@@ -67,15 +67,23 @@ func (err BadHttpResponseCode) Error() string {
 
 // Retry is the core library method for retrying http calls.
 //
-// httpCall should be a function that performs the http operation, and returns
-// (resp *http.Response, tempError error, permError error). Errors that should
-// cause retries should be returned as tempError. Permanent errors that should
-// not result in retries should be returned as permError. Retries are performed
-// using the exponential backoff algorithm from the github.com/cenkalti/backoff
-// package. Retry automatically treats HTTP 5xx status codes as a temporary
-// error, and any other non-2xx HTTP status codes as a permanent error. Thus
-// httpCall function does not need to handle the HTTP status code of resp,
+// httpCall should be a function that performs the http operation. Errors that
+// should cause retries should be returned as tempError. Permanent errors that
+// should not result in retries should be returned as permError. Retries are
+// performed using the exponential backoff algorithm from the
+// github.com/cenkalti/backoff package. Retry treats HTTP 5xx status codes as a
+// temporary error, and any other non-2xx HTTP status codes as a permanent
+// error. Thus httpCall does not need to handle the HTTP status code of resp,
 // since Retry will take care of it.
+//
+// if httpCall returns either a temporary or permanent error, Retry will *not*
+// attempt to close the response body. Therefore httpCall should make sure to
+// close the response body of any open HTTP response bodies it creates, if it
+// returns a temporary or permanent error. If httpCall does not return a
+// permanent nor a temporary error, resp should not be closed in httpCall.
+//
+// As with http package, if an error is not returned by Retry, the caller of
+// Retry is responsible for closing the HTTP response body.
 //
 // Concurrent use of this library method is supported.
 func (httpRetryClient *Client) Retry(httpCall func() (resp *http.Response, tempError error, permError error)) (*http.Response, int, error) {
@@ -102,6 +110,12 @@ func (httpRetryClient *Client) Retry(httpCall func() (resp *http.Response, tempE
 		}
 		// now check if http response code is such that we should retry [500, 600)...
 		if respCode := response.StatusCode; respCode/100 == 5 {
+			// If this is not the last attempt, the request will be retried and
+			// the response body should be closed. If this is the last attempt,
+			// Retry will return an error, so caller isn't responsible for
+			// closing response body. Therefore, in either case, response body
+			// needs to be closed.
+			defer response.Body.Close()
 			return BadHttpResponseCode{
 				HttpResponseCode: respCode,
 				Message:          "(Intermittent) HTTP response code " + strconv.Itoa(respCode) + "\n" + body(response),
@@ -109,12 +123,15 @@ func (httpRetryClient *Client) Retry(httpCall func() (resp *http.Response, tempE
 		}
 		// now check http response code is ok [200, 300)...
 		if respCode := response.StatusCode; respCode/100 != 2 {
+			// Retry will return an error, so caller isn't responsible for closing response body
+			defer response.Body.Close()
 			permError = BadHttpResponseCode{
 				HttpResponseCode: respCode,
 				Message:          "(Permanent) HTTP response code " + strconv.Itoa(respCode) + "\n" + body(response),
 			}
 			return nil
 		}
+		// don't close response body if call was successful, since we won't be returning an error, and caller is responsible for closing it
 		return nil
 	}
 
