@@ -42,7 +42,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/cenkalti/backoff"
+	"github.com/cenkalti/backoff/v3"
 )
 
 var defaultClient Client = Client{
