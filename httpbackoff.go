@@ -102,10 +102,11 @@ func (httpRetryClient *Client) Retry(httpCall func() (resp *http.Response, tempE
 		}
 		// now check if http response code is such that we should retry [500, 600)...
 		if respCode := response.StatusCode; respCode/100 == 5 {
-			return BadHttpResponseCode{
+			tempError = BadHttpResponseCode{
 				HttpResponseCode: respCode,
 				Message:          "(Intermittent) HTTP response code " + strconv.Itoa(respCode) + "\n" + body(response),
 			}
+			return tempError
 		}
 		// now check http response code is ok [200, 300)...
 		if respCode := response.StatusCode; respCode/100 != 2 {
