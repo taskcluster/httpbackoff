@@ -4,6 +4,10 @@ package httpbackoff
 
 import (
 	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // Stub server to send three 5xx failure status code responses
@@ -28,6 +32,34 @@ func TestRetry5xx(t *testing.T) {
 
 	if statusCode := resp.StatusCode; statusCode != 200 {
 		t.Errorf("API retry logic broken - expected response code 200, but received code %v...\n", statusCode)
+	}
+}
+
+// Check that when retries run out, the last temporary
+// error is returned, even if htat was a 500.
+func TestRetry5xxAndFail(t *testing.T) {
+
+	testClient.BackOffSettings.InitialInterval = 10 * time.Millisecond
+
+	handler.QueueResponse(500)
+	handler.QueueResponse(500)
+	handler.QueueResponse(500)
+	handler.QueueResponse(500)
+	handler.QueueResponse(500)
+
+	// defer clean up in case we have t.Fatalf calls
+	defer handler.ClearResponseQueue()
+
+	resp, _, err := testClient.Get("http://localhost:50849/TestRetry5xx")
+
+	if assert.Error(t, err) {
+		herr, ok := err.(BadHttpResponseCode)
+		require.True(t, ok)
+		require.Equal(t, herr.HttpResponseCode, 500)
+	}
+
+	if statusCode := resp.StatusCode; statusCode != 500 {
+		t.Errorf("API retry logic broken - expected response code 500, but received code %v...\n", statusCode)
 	}
 }
 
