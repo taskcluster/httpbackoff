@@ -2,9 +2,9 @@
 
 # httpbackoff
 
-[![Build Status](https://travis-ci.org/taskcluster/httpbackoff.svg?branch=master)](https://travis-ci.org/taskcluster/httpbackoff)
+[![Build Status](https://travis-ci.org/taskcluster/httpbackoff.svg?branch=main)](https://travis-ci.org/taskcluster/httpbackoff)
 [![GoDoc](https://godoc.org/github.com/taskcluster/httpbackoff?status.svg)](https://godoc.org/github.com/taskcluster/httpbackoff)
-[![Coverage Status](https://coveralls.io/repos/taskcluster/httpbackoff/badge.svg?branch=master&service=github)](https://coveralls.io/github/taskcluster/httpbackoff?branch=master)
+[![Coverage Status](https://coveralls.io/repos/taskcluster/httpbackoff/badge.svg?branch=main&service=github)](https://coveralls.io/github/taskcluster/httpbackoff?branch=master)
 [![License](https://img.shields.io/badge/license-MPL%202.0-orange.svg)](http://mozilla.org/MPL/2.0)
 
 Automatic http retries for intermittent failures, with exponential backoff,
