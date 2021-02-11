@@ -3,7 +3,7 @@ language: go
 env:
   - GO111MODULE=on
 go:
-  - 1.12
+  - 1.15
 
 before_install:
   - go get github.com/axw/gocov/gocov
