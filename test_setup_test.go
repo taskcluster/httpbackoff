@@ -31,20 +31,20 @@ type HTTPResponse struct {
 }
 
 // Fake auth endpoint
-func (this *MyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	response := this.QueuedResponses[0]
-	this.QueuedResponses = this.QueuedResponses[1:]
+func (handler *MyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	response := handler.QueuedResponses[0]
+	handler.QueuedResponses = handler.QueuedResponses[1:]
 	w.WriteHeader(response.statusCode)
-	io.WriteString(w, response.body)
+	_, _ = io.WriteString(w, response.body)
 }
 
-func (this *MyHandler) QueueResponse(statusCode int) {
+func (handler *MyHandler) QueueResponse(statusCode int) {
 	body := fmt.Sprintf("This is a *fake* HTTP %d response body for testing purposes", statusCode)
-	this.QueuedResponses = append(this.QueuedResponses, HTTPResponse{body: body, statusCode: statusCode})
+	handler.QueuedResponses = append(handler.QueuedResponses, HTTPResponse{body: body, statusCode: statusCode})
 }
 
-func (this *MyHandler) ClearResponseQueue() {
-	this.QueuedResponses = make([]HTTPResponse, 0)
+func (handler *MyHandler) ClearResponseQueue() {
+	handler.QueuedResponses = make([]HTTPResponse, 0)
 }
 
 func NewMyHandler() *MyHandler {
@@ -74,7 +74,9 @@ func TestMain(m *testing.M) {
 	}
 
 	// Start the listener...
-	go server.Serve(listener)
+	go func() {
+		_ = server.Serve(listener)
+	}()
 
 	// Run all the tests...
 	returnCode := m.Run()

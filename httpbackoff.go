@@ -18,15 +18,15 @@
 // The methods in this library should be able to run concurrently in multiple
 // go routines.
 //
-// Example Usage
+// # Example Usage
 //
 // Consider this trivial HTTP GET request:
 //
-//  res, err := http.Get("http://www.google.com/robots.txt")
+//	res, err := http.Get("http://www.google.com/robots.txt")
 //
 // This can be rewritten as follows, enabling automatic retries:
 //
-//  res, attempts, err := httpbackoff.Get("http://www.google.com/robots.txt")
+//	res, attempts, err := httpbackoff.Get("http://www.google.com/robots.txt")
 //
 // The variable attempts stores the number of http calls that were made (one
 // plus the number of retries).
@@ -121,7 +121,7 @@ func (httpRetryClient *Client) Retry(httpCall func() (resp *http.Response, tempE
 
 	// Make HTTP API calls using an exponential backoff algorithm...
 	b := backoff.ExponentialBackOff(*httpRetryClient.BackOffSettings)
-	backoff.RetryNotify(doHttpCall, &b, func(err error, wait time.Duration) {
+	_ = backoff.RetryNotify(doHttpCall, &b, func(err error, wait time.Duration) {
 		log.Printf("Error: %s", err)
 	})
 
