@@ -1,29 +1,43 @@
 version: 1
-reporting: checks-v1
 policy:
   pullRequests: public
 tasks:
-  - provisionerId: proj-taskcluster
-    workerType: gw-ci-ubuntu-22-04
-    created: {$fromNow: ''}
-    deadline: {$fromNow: '1 day'}
-    payload:
-      command:
-        - /bin/bash
-        - '-vxec'
-        -|
-          git clone ${repo.clone_url} repo
-          cd repo
-          git config advice.detachedHead false
-          git checkout ${repo.ref}
-          go mod tidy
-          git status
-          # output of wc command can contain spaces on darwin, so no quotes around expression
-          test $(git status --porcelain | wc -l) == 0
-          go test ./...
-      maxRunTime: 3600
-    metadata:
-      name: httpbackoff CI
-      description: builds and tests httpbackoff
-      owner: taskcluster-internal@mozilla.com
-      source: ${event.repository.url}
+  $let:
+    head_rev:
+      $if: 'tasks_for == "github-pull-request"'
+      then: ${event.pull_request.head.sha}
+      else:
+        $if: 'tasks_for == "github-push"'
+        then: ${event.after}
+        else: ${event.release.tag_name}
+
+    repository:
+      $if: 'tasks_for == "github-pull-request"'
+      then: ${event.pull_request.head.repo.html_url}
+      else: ${event.repository.html_url}
+  in:
+    - taskId: { $eval: as_slugid("tests_task") }
+      provisionerId: proj-taskcluster
+      workerType: gw-ci-ubuntu-22-04
+      created: {$fromNow: ''}
+      deadline: {$fromNow: '1 day'}
+      payload:
+        command:
+          - /bin/bash
+          - '-vxec'
+          -|
+            git clone ${repo.clone_url} repo
+            cd repo
+            git config advice.detachedHead false
+            git checkout ${repo.ref}
+            go mod tidy
+            git status
+            # output of wc command can contain spaces on darwin, so no quotes around expression
+            test $(git status --porcelain | wc -l) == 0
+            go test ./...
+        maxRunTime: 3600
+      metadata:
+        name: httpbackoff CI
+        description: builds and tests httpbackoff
+        owner: taskcluster-internal@mozilla.com
+        source: ${event.repository.url}
