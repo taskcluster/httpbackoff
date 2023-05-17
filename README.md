@@ -11,9 +11,9 @@ Automatic http retries for intermittent failures, with exponential backoff,
 based on https://github.com/cenkalti/backoff.
 
 The reason for a separate library, is that this library handles http status
-codes to know whether to retry or not.  HTTP codes in range 500-599 are
-retried. Connection failures are also retried. Status codes 400-499 are
-considered permanent errors and are not retried.
+codes to know whether to retry or not.  HTTP codes in range 500-599, and code
+429 are retried. Connection failures are also retried. Status codes 400-499
+(except for 429) are considered permanent errors and are not retried.
 
 The Retry function performs the http request and retries if temporary errors
 occur. It takes a single parameter as its input - a function to perform the
