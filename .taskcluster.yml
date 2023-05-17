@@ -18,7 +18,7 @@ tasks:
   in:
     - taskId: { $eval: as_slugid("tests_task") }
       provisionerId: proj-taskcluster
-      workerType: gw-ci-ubuntu-22-04
+      workerType: gw-ubuntu-22-04
       created: {$fromNow: ''}
       deadline: {$fromNow: '1 day'}
       payload:
