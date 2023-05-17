@@ -26,10 +26,10 @@ tasks:
           - /bin/bash
           - '-vxec'
           - |
-            git clone ${repo.clone_url} repo
+            git clone ${repository} repo
             cd repo
             git config advice.detachedHead false
-            git checkout ${repo.ref}
+            git checkout ${head_rev}
             go mod tidy
             git status
             # output of wc command can contain spaces on darwin, so no quotes around expression
