@@ -100,8 +100,8 @@ func (httpRetryClient *Client) Retry(httpCall func() (resp *http.Response, tempE
 			}
 			return ""
 		}
-		// now check if http response code is such that we should retry [500, 600)...
-		if respCode := response.StatusCode; respCode/100 == 5 {
+		// now check if http response code is such that we should retry [500, 600) or 429...
+		if respCode := response.StatusCode; respCode/100 == 5 || respCode == 429 {
 			tempError = BadHttpResponseCode{
 				HttpResponseCode: respCode,
 				Message:          "(Intermittent) HTTP response code " + strconv.Itoa(respCode) + "\n" + body(response),
@@ -121,7 +121,7 @@ func (httpRetryClient *Client) Retry(httpCall func() (resp *http.Response, tempE
 
 	// Make HTTP API calls using an exponential backoff algorithm...
 	b := backoff.ExponentialBackOff(*httpRetryClient.BackOffSettings)
-	backoff.RetryNotify(doHttpCall, &b, func(err error, wait time.Duration) {
+	_ = backoff.RetryNotify(doHttpCall, &b, func(err error, wait time.Duration) {
 		log.Printf("Error: %s", err)
 	})
 
