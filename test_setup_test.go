@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cenkalti/backoff/v3"
+	"github.com/cenkalti/backoff/v4"
 )
 
 var (
@@ -32,6 +32,9 @@ type HTTPResponse struct {
 
 // Fake auth endpoint
 func (handler *MyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if len(handler.QueuedResponses) == 0 {
+		return
+	}
 	response := handler.QueuedResponses[0]
 	handler.QueuedResponses = handler.QueuedResponses[1:]
 	w.WriteHeader(response.statusCode)
