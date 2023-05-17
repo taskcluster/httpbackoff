@@ -63,7 +63,7 @@ func TestRetry5xxAndFail(t *testing.T) {
 	}
 }
 
-// Want to make sure 4xx errors are not retried...
+// Want to make sure 4xx errors (except 429) are not retried...
 func TestRetry4xx(t *testing.T) {
 	handler.QueueResponse(409)
 	handler.QueueResponse(200)
@@ -80,6 +80,29 @@ func TestRetry4xx(t *testing.T) {
 
 	if statusCode := resp.StatusCode; statusCode != 409 {
 		t.Errorf("API retry logic broken - expected response code 409, but received code %v...\n", statusCode)
+	}
+}
+
+// Want to make sure 429 is retried...
+func TestRetry429(t *testing.T) {
+	handler.QueueResponse(429)
+	handler.QueueResponse(200)
+
+	// defer clean up in case we have t.Fatalf calls
+	defer handler.ClearResponseQueue()
+
+	resp, attempts, err := testClient.Get("http://localhost:50849/TestRetry429")
+
+	if err != nil {
+		t.Errorf("Unexpected error: %v\n", err)
+	}
+
+	if statusCode := resp.StatusCode; statusCode != 200 {
+		t.Errorf("API retry logic broken - expected response code 200, but received code %v...\n", statusCode)
+	}
+
+	if attempts != 2 {
+		t.Errorf("Was expecting 2 retry attempts, but had %v...\n", attempts)
 	}
 }
 
