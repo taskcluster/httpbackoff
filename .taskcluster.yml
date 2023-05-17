@@ -25,7 +25,7 @@ tasks:
         command:
           - /bin/bash
           - '-vxec'
-          -|
+          - |
             git clone ${repo.clone_url} repo
             cd repo
             git config advice.detachedHead false
