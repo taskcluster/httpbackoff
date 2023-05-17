@@ -28,7 +28,7 @@ tasks:
             - |
               export GOROOT="$(pwd)/go1.19.9/go"
               export GOPATH="$(pwd)/gopath1.19.9"
-              export PATH="${GOPATH}/bin:${GOROOT}/bin:$(pwd)/bin:${PATH}"
+              export PATH="$${GOPATH}/bin:$${GOROOT}/bin:$(pwd)/bin:$${PATH}"
 
               git --version
               go version
