@@ -26,8 +26,8 @@ tasks:
           - - /bin/bash
             - '-vxec'
             - |
-              export GOROOT="$(pwd)/go1.19.9/go"
-              export GOPATH="$(pwd)/gopath1.19.9"
+              export GOROOT="$(pwd)/go1.27.1/go"
+              export GOPATH="$(pwd)/gopath1.27.1"
               export PATH="$${GOPATH}/bin:$${GOROOT}/bin:$(pwd)/bin:$${PATH}"
 
               git --version
@@ -48,9 +48,9 @@ tasks:
               ../golangci-lint/golangci-lint-1.51.2-*/golangci-lint run --timeout=5m
         mounts:
           - content:
-              sha256: e858173b489ec1ddbe2374894f52f53e748feed09dde61be5b4b4ba2d73ef34b
-              url: https://storage.googleapis.com/golang/go1.19.9.linux-amd64.tar.gz
-            directory: go1.19.9
+              sha256: 63d339f0da5ab53635a56f2490a7984dfe12dfcff22ad749f63edaf590168445
+              url: https://dl.google.com/go/go1.27.1.linux-amd64.tar.gz
+            directory: go1.27.1
             format: tar.gz
           - content:
               sha256: 4de479eb9d9bc29da51aec1834e7c255b333723d38dbd56781c68e5dddc6a90b
