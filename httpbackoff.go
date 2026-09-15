@@ -35,6 +35,7 @@ package httpbackoff
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -42,15 +43,17 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/cenkalti/backoff/v3"
+	"github.com/cenkalti/backoff/v7"
 )
 
 var defaultClient Client = Client{
 	BackOffSettings: backoff.NewExponentialBackOff(),
+	MaxElapsedTime:  backoff.DefaultMaxElapsedTime,
 }
 
 type Client struct {
 	BackOffSettings *backoff.ExponentialBackOff
+	MaxElapsedTime  time.Duration
 }
 
 // Any non 2xx HTTP status code is considered a bad response code, and will
@@ -82,14 +85,14 @@ func (httpRetryClient *Client) Retry(httpCall func() (resp *http.Response, tempE
 	var tempError, permError error
 	var response *http.Response
 	attempts := 0
-	doHttpCall := func() error {
+	doHttpCall := func() (*http.Response, error) {
 		response, tempError, permError = httpCall()
 		attempts += 1
 		if tempError != nil {
-			return tempError
+			return response, tempError
 		}
 		if permError != nil {
-			return nil
+			return response, backoff.Permanent(permError)
 		}
 		// only call this if there is a non 2xx response
 		body := func(response *http.Response) string {
@@ -106,7 +109,7 @@ func (httpRetryClient *Client) Retry(httpCall func() (resp *http.Response, tempE
 				HttpResponseCode: respCode,
 				Message:          "(Intermittent) HTTP response code " + strconv.Itoa(respCode) + "\n" + body(response),
 			}
-			return tempError
+			return response, tempError
 		}
 		// now check http response code is ok [200, 300)...
 		if respCode := response.StatusCode; respCode/100 != 2 {
@@ -114,16 +117,20 @@ func (httpRetryClient *Client) Retry(httpCall func() (resp *http.Response, tempE
 				HttpResponseCode: respCode,
 				Message:          "(Permanent) HTTP response code " + strconv.Itoa(respCode) + "\n" + body(response),
 			}
-			return nil
+			return response, backoff.Permanent(permError)
 		}
-		return nil
+		return response, nil
 	}
 
 	// Make HTTP API calls using an exponential backoff algorithm...
-	b := backoff.ExponentialBackOff(*httpRetryClient.BackOffSettings)
-	_ = backoff.RetryNotify(doHttpCall, &b, func(err error, wait time.Duration) {
-		log.Printf("Error: %s", err)
-	})
+	b := *httpRetryClient.BackOffSettings
+	_, _ = backoff.Retry(context.Background(), doHttpCall,
+		backoff.WithBackOff(&b),
+		backoff.WithMaxElapsedTime(httpRetryClient.MaxElapsedTime),
+		backoff.WithNotify(func(err error, wait time.Duration) {
+			log.Printf("Error: %s", err)
+		}),
+	)
 
 	switch {
 	case permError != nil:

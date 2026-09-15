@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cenkalti/backoff/v3"
+	"github.com/cenkalti/backoff/v7"
 )
 
 var (
@@ -61,9 +61,8 @@ func TestMain(m *testing.M) {
 			RandomizationFactor: 0.2,
 			Multiplier:          1.2,
 			MaxInterval:         5 * time.Millisecond,
-			MaxElapsedTime:      20 * time.Millisecond,
-			Clock:               backoff.SystemClock,
 		},
+		MaxElapsedTime: 20 * time.Millisecond,
 	}
 
 	err = startServingHTTP()
