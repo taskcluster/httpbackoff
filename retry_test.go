@@ -39,7 +39,9 @@ func TestRetry5xx(t *testing.T) {
 // error is returned, even if htat was a 500.
 func TestRetry5xxAndFail(t *testing.T) {
 
+	initialInterval := testClient.BackOffSettings.InitialInterval
 	testClient.BackOffSettings.InitialInterval = 10 * time.Millisecond
+	defer func() { testClient.BackOffSettings.InitialInterval = initialInterval }()
 
 	handler.QueueResponse(500)
 	handler.QueueResponse(500)
