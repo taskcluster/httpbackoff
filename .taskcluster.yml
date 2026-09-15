@@ -16,51 +16,56 @@ tasks:
       then: ${event.pull_request.head.repo.html_url}
       else: ${event.repository.html_url}
   in:
-    - taskId: { $eval: as_slugid("tests_task") }
-      provisionerId: proj-taskcluster
-      workerType: gw-ubuntu-24-04
-      created: {$fromNow: ''}
-      deadline: {$fromNow: '1 day'}
-      payload:
-        command:
-          - - /bin/bash
-            - '-vxec'
-            - |
-              export GOROOT="$(pwd)/go1.27.1/go"
-              export GOPATH="$(pwd)/gopath1.27.1"
-              export PATH="$${GOPATH}/bin:$${GOROOT}/bin:$(pwd)/bin:$${PATH}"
+    $if: >-
+      (tasks_for == "github-pull-request" && event.action in ["opened", "reopened", "synchronize"])
+      || (tasks_for == "github-push" && event.ref == "refs/heads/main")
+    then:
+      - taskId: { $eval: as_slugid("tests_task") }
+        provisionerId: proj-taskcluster
+        workerType: gw-ubuntu-24-04
+        created: {$fromNow: ''}
+        deadline: {$fromNow: '1 day'}
+        payload:
+          command:
+            - - /bin/bash
+              - '-vxec'
+              - |
+                export GOROOT="$(pwd)/go1.27.1/go"
+                export GOPATH="$(pwd)/gopath1.27.1"
+                export PATH="$${GOPATH}/bin:$${GOROOT}/bin:$(pwd)/bin:$${PATH}"
 
-              git --version
-              go version
-              go env
+                git --version
+                go version
+                go env
 
-              git clone '${repository}' d2g
-              cd d2g
-              git -c advice.detachedHead=false checkout '${head_rev}'
+                git clone '${repository}' d2g
+                cd d2g
+                git -c advice.detachedHead=false checkout '${head_rev}'
 
-              go mod tidy
-              git status
-              test $(git status --porcelain | wc -l) == 0
+                go mod tidy
+                git status
+                test $(git status --porcelain | wc -l) == 0
 
-              go install ./...
-              go vet ./...
-              go test ./...
-              ../golangci-lint/golangci-lint-2.13.2-*/golangci-lint run --timeout=5m
-        mounts:
-          - content:
-              sha256: 63d339f0da5ab53635a56f2490a7984dfe12dfcff22ad749f63edaf590168445
-              url: https://dl.google.com/go/go1.27.1.linux-amd64.tar.gz
-            directory: go1.27.1
-            format: tar.gz
-          - content:
-              sha256: 2277d43b98ec0054280f2ac26b53268bae97682444678a59a657dd565da021d6
-              url: >-
-                https://github.com/golangci/golangci-lint/releases/download/v2.13.2/golangci-lint-2.13.2-linux-amd64.tar.gz
-            directory: golangci-lint
-            format: tar.gz
-        maxRunTime: 3600
-      metadata:
-        name: httpbackoff CI
-        description: builds and tests httpbackoff
-        owner: taskcluster-internal@mozilla.com
-        source: ${event.repository.url}
+                go install ./...
+                go vet ./...
+                go test ./...
+                ../golangci-lint/golangci-lint-2.13.2-*/golangci-lint run --timeout=5m
+          mounts:
+            - content:
+                sha256: 63d339f0da5ab53635a56f2490a7984dfe12dfcff22ad749f63edaf590168445
+                url: https://dl.google.com/go/go1.27.1.linux-amd64.tar.gz
+              directory: go1.27.1
+              format: tar.gz
+            - content:
+                sha256: 2277d43b98ec0054280f2ac26b53268bae97682444678a59a657dd565da021d6
+                url: >-
+                  https://github.com/golangci/golangci-lint/releases/download/v2.13.2/golangci-lint-2.13.2-linux-amd64.tar.gz
+              directory: golangci-lint
+              format: tar.gz
+          maxRunTime: 3600
+        metadata:
+          name: httpbackoff CI
+          description: builds and tests httpbackoff
+          owner: taskcluster-internal@mozilla.com
+          source: ${event.repository.url}
+    else: []
